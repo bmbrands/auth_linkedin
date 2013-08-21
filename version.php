@@ -1,15 +1,22 @@
 <?php
+
 /**
- * @author Bas Brands
- * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
- * @package moodle linkedIn auth
+ * This plugin is to be used in combination with the LinkedIn authentication block
  *
+ * @package    auth
+ * @subpackage linkedin
+ * @copyright  2013 Bas Brands, www.basbrands.nl
+ * @author     Bas Brands bas@sonsbeekmedia.nl
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2012091800;
-$plugin->requires = 2011120500;   // Requires Moodle 2.2 or later
-$plugin->release = '1.1 (Build: 2012071600)';
-$plugin->maturity = MATURITY_STABLE;             // this version's maturity level
-$plugin->component = 'auth_linkedin'; // Full name of the plugin (used for diagnostics)
+$plugin->version  = 2013082100;
+$plugin->requires = 2011120500;
+$plugin->release = '2 (Build: 2013082100)';
+$plugin->maturity = MATURITY_STABLE;
+$plugin->component = 'auth_linkedin';
+$plugin->dependencies = array(
+    'block_linkedin'  => 2013082100,
+);

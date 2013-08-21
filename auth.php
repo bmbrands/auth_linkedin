@@ -5,9 +5,8 @@
  *
  * @package    auth
  * @subpackage linkedin
- * @copyright  2012 Bas Brands
- * @copyright  2012 Bright Alley Knowledge and learning
- * @author     Bas Brands bmbrands@gmail.com
+ * @copyright  2013 Bas Brands
+ * @author     Bas Brands bas@sonsbeekmedia.nl
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -84,8 +83,6 @@ class auth_plugin_linkedin extends auth_plugin_base {
         $access = get_config("auth/linkedin", 'linkedin_access');
         $secret = get_config("auth/linkedin", 'linkedin_secret');
 
-
-
         $linkedin = new LinkedInAuth($access, $secret, $CFG->wwwroot.'/login/index.php' );
 
         $linkedinpost = false;
@@ -99,13 +96,10 @@ class auth_plugin_linkedin extends auth_plugin_base {
 
             $_SESSION['oauth_access_token'] = serialize($linkedin->access_token);
 
-            $xml_response = $linkedin->getProfile("~:(id,first-name,last-name,headline,picture-url,location,industry,interests,public-profile-url,positions,summary)");
+            $xml_response = $linkedin->getProfile("~:(id,email-address,first-name,last-name,headline,picture-url,location,industry,interests,public-profile-url,positions,summary)");
             $linkedin_response = new SimpleXMLElement($xml_response);
             $linkedinpost = true;
-
         }
-
-
 
         if (isset($linkedin_response->id)) {
 
@@ -117,10 +111,13 @@ class auth_plugin_linkedin extends auth_plugin_base {
                 $newuser = new stdClass();
                 $newuser->firstname =  (string) $linkedin_response->{'first-name'};
                 $newuser->lastname =  (string) $linkedin_response->{'last-name'};
+                $newuser->email =  (string) $linkedin_response->{'email-address'};
+
                 $newuser->picture = 1;
 
                 if (isset($linkedin_response->{'location'}->country->code)) {
-                    $newuser->country = (string) $linkedin_response->{'location'}->country->code;
+                    $countrycode = (string) $linkedin_response->{'location'}->country->code;
+                    $newuser->country = strtoupper($countrycode);
                 }
                 if (isset($linkedin_response->{'positions'}->position[0]->company->name)) {
                     $newuser->institution = substr($linkedin_response->{'positions'}->position[0]->company->name,0,39);
@@ -135,7 +132,7 @@ class auth_plugin_linkedin extends auth_plugin_base {
                     $newuser->url = (string) $linkedin_response->{'public-profile-url'};
                 }
             }
-            
+
             //Creating a new user account
             $user = authenticate_user_login($username, null);
 
@@ -143,34 +140,37 @@ class auth_plugin_linkedin extends auth_plugin_base {
                 if (!empty($newuser)) {
                     $newuser->id = $user->id;
                     $newuser->username = $username;
-                    $debugfile = $CFG->dataroot . '/newuser.txt';
+                    $newuser->email =  (string) $linkedin_response->{'email-address'};
+
                     $DB->update_record('user', $newuser);
                 } else {
-                    
+
                     //Update profile url & description
                     if (isset($linkedin_response->{'public-profile-url'})) {
                         $profileurl = (array) $linkedin_response->{'public-profile-url'};
                         $user->url = $profileurl[0];
                     }
+                    $countrycode = (string) $linkedin_response->{'location'}->country->code;
+                    $user->country = strtoupper($countrycode);
 
                     $user->description = (string) $linkedin_response->headline;
-                    
+                    $user->email =  (string) $linkedin_response->{'email-address'};
                     $DB->update_record('user', $user);
                 }
 
                 //Get the user picture
                 $context = get_context_instance(CONTEXT_USER, $user->id, MUST_EXIST);
                 $fs = get_file_storage();
-                
+
                 $linkedinurl  = $linkedin_response->{'picture-url'};
                 $linkedinpic = $CFG->dataroot .  '/temp/' . $user->id . '-picture.jpg';
-                
+
                 //Download using Curl
                 $ch = curl_init($linkedinurl);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 $data = curl_exec($ch);
                 curl_close($ch);
-                
+
                 //Set the picture for new users
                 file_put_contents($linkedinpic, $data);
                 if (isset($newuser->id)) {
@@ -179,20 +179,18 @@ class auth_plugin_linkedin extends auth_plugin_base {
                     }
                 }
 
-
                 complete_user_login($user);
-                
-                
+
+
                 if (user_not_fully_set_up($user)) {
                     //Send users to the email completion form
-                    $urltogo = $CFG->wwwroot.'/auth/linkedin/linkedin_edituser.php';
+                    $urltogo = $CFG->wwwroot.'/user/edit.php?id=' . $user->id;
                 } else {
                     //Send back and reload homepage
                     $urltogo = $CFG->wwwroot.'/auth/linkedin/reloadhome.php';
                 }
-
                 redirect($urltogo);
-                
+
             }   else {
                 throw new moodle_exception('couldnotgetlinkedinaccesstoken', 'auth_linkedin');
             }
@@ -285,10 +283,8 @@ class auth_plugin_linkedin extends auth_plugin_base {
         if (!isset ($config->linkedin_secret)) {
             $config->linkedin_access = '';
         }
-
         set_config('linkedin_access', $config->linkedin_access, 'auth/linkedin');
         set_config('linkedin_secret', $config->linkedin_secret, 'auth/linkedin');
-
 
         return true;
     }
