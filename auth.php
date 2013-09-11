@@ -131,6 +131,7 @@ class auth_plugin_linkedin extends auth_plugin_base {
                 if (isset($linkedin_response->{'public-profile-url'})) {
                     $newuser->url = (string) $linkedin_response->{'public-profile-url'};
                 }
+                events_trigger('user_created', $newuser);
             }
 
             //Creating a new user account
@@ -143,6 +144,8 @@ class auth_plugin_linkedin extends auth_plugin_base {
                     $newuser->email =  (string) $linkedin_response->{'email-address'};
 
                     $DB->update_record('user', $newuser);
+                    events_trigger('user_updated', $newuser);
+
                 } else {
 
                     //Update profile url & description

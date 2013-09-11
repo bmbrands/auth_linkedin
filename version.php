@@ -12,9 +12,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2013082100;
+$plugin->version  = 2013101100;
 $plugin->requires = 2011120500;
-$plugin->release = '2 (Build: 2013082100)';
+$plugin->release = '2 (Build: 2013101100)';
 $plugin->maturity = MATURITY_STABLE;
 $plugin->component = 'auth_linkedin';
 $plugin->dependencies = array(
