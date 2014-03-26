@@ -3,9 +3,8 @@
 <script type="text/javascript">
   function reloadParentAndClose() {
         // reload the opener or the parent window
-        window.opener.location.reload();
-        // then close this pop-up window
-        window.close();
+      window.opener.location.href = '/';
+      self.close();
     }
 
 </script>
