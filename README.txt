@@ -5,7 +5,13 @@ Funded by: BrightAlley, Sonsbeekmedia.
 
 - Updates
 
-August 21st 2013: This plugin now retreives the user email addresses from LinkedIn.
+April 29 2015:
+- new version for Moodle 2.8 and newer:
+- update event system
+- update user fields
+
+August 21st 2013: 
+- This plugin now retreives the user email addresses from LinkedIn.
 
 - About this plugin:
 
