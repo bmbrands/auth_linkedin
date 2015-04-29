@@ -106,18 +106,25 @@ class auth_plugin_linkedin extends auth_plugin_base {
             $username = clean_param($linkedin_response->id, PARAM_ALPHA);
             $user = $DB->get_record('user', array('username' => $username, 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id));
 
+                global $CFG;
+                $debugfile = $CFG->dataroot . '/temp/linkedin-resp.txt';
+                $fh = fopen($debugfile, 'a');
+                fwrite($fh, print_r($linkedin_response, true));
+                fclose($fh);
+
             if (empty($user)) {
                 // Creating a new user object
                 $newuser = new stdClass();
-                $newuser->firstname =  (string) $linkedin_response->{'first-name'};
-                $newuser->lastname =  (string) $linkedin_response->{'last-name'};
+                $newuser->firstnamephonetic = $newuser->firstname =  (string) $linkedin_response->{'first-name'};
+                $newuser->lastnamephonetic = $newuser->lastname =  (string) $linkedin_response->{'last-name'};
+                $newuser->middlename = $newuser->alternatename = '';
                 $newuser->email =  (string) $linkedin_response->{'email-address'};
 
                 $newuser->picture = 1;
 
                 if (isset($linkedin_response->{'location'}->country->code)) {
                     $countrycode = (string) $linkedin_response->{'location'}->country->code;
-                    $newuser->country = strtoupper($countrycode);
+                    //$newuser->country = strtoupper($countrycode);
                 }
                 if (isset($linkedin_response->{'positions'}->position[0]->company->name)) {
                     $newuser->institution = substr($linkedin_response->{'positions'}->position[0]->company->name,0,39);
@@ -131,10 +138,9 @@ class auth_plugin_linkedin extends auth_plugin_base {
                 if (isset($linkedin_response->{'public-profile-url'})) {
                     $newuser->url = (string) $linkedin_response->{'public-profile-url'};
                 }
-                events_trigger('user_created', $newuser);
             }
 
-            //Creating a new user account
+            // Creating a new user account.
             $user = authenticate_user_login($username, null);
 
             if ($user) {
@@ -144,7 +150,7 @@ class auth_plugin_linkedin extends auth_plugin_base {
                     $newuser->email =  (string) $linkedin_response->{'email-address'};
 
                     $DB->update_record('user', $newuser);
-                    events_trigger('user_updated', $newuser);
+                    \core\event\user_created::create_from_userid($user->id)->trigger();
 
                 } else {
 
@@ -162,7 +168,7 @@ class auth_plugin_linkedin extends auth_plugin_base {
                 }
 
                 //Get the user picture
-                $context = get_context_instance(CONTEXT_USER, $user->id, MUST_EXIST);
+                $context = context_user::instance($user->id);
                 $fs = get_file_storage();
 
                 $linkedinurl  = $linkedin_response->{'picture-url'};
